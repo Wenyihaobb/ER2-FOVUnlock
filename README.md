@@ -183,7 +183,6 @@ Restart the game after rebuilding — the DLL is loaded at startup.
 | FOV never changes | `Enabled` is off, or you are on the main menu / loading screen (`OnlyInMatch`) |
 | Scope view looks wrong | Raise `VanillaViewRatio` slightly, or add the scope camera name to `ExcludedCameraNames` |
 | Firing still happens while the menu is open | Make sure `UseInventoryGate` is true; `BlockInputViaPause` is an optional fallback |
-| Game fails to start | Remove `ER2_FovUnlock.dll` from `BepInEx\plugins\` — the mod never writes to game saves |
 | Build reports missing DLLs | Check `GameDir` / `InteropDir` and launch the game once so BepInEx generates its interop folder |
 | `dotnet build` is not recognised | Install a .NET 6 SDK; a .NET runtime alone is not enough |
 
