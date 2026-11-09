@@ -23,8 +23,17 @@ namespace ER2FovUnlock
         /// <summary>the control is over aircraft and other airborne vehicles. For airborne vehicles, the third-person perspective retains the phrase "breathe in deeply to zoom in".</summary>
         internal static bool IsAirVehicle { get; private set; }
 
+        /// <summary>The player currently occupies a vehicle (ground or air).</summary>
+        internal static bool IsInVehicle { get; private set; }
+
         /// <summary>Walking with a gun (not in a vehicle, nor at a fixed weapon/weapon position).</summary>
         internal static bool IsOnFoot { get; private set; } = true;
+
+        /// <summary>
+        /// True whenever aim is held, including vehicle gunner sights where the game's
+        /// aiming API may stay false and only the right mouse button is reliable.
+        /// </summary>
+        internal static bool AimPressed { get; private set; }
 
         /// <summary>A summary of the status displayed in the menu.</summary>
         internal static string Summary { get; private set; } = "Status detection in progress...";
@@ -187,6 +196,7 @@ namespace ER2FovUnlock
             try
             {
                 var vehicle = Soldier.CurrentControlledVehicleOrNull();
+                IsInVehicle = vehicle != null;
                 IsAirVehicle = vehicle != null && vehicle.IsAirVehicle();
 
                 // Fixed artillery pieces / fixed machine guns and other gun positions are not included in the Vehicle, but the player still occupies a Seat.
@@ -203,6 +213,7 @@ namespace ER2FovUnlock
             {
                 // If it cannot be read, handle it as "Infantry combat / Non-Airborne Vehicle" (the function remains intact), and keep the log silent.
                 IsAirVehicle = false;
+                IsInVehicle = false;
                 IsOnFoot = true;
             }
         }
@@ -233,6 +244,7 @@ namespace ER2FovUnlock
             // The only exception is "Air Vehicle + Third Person View", which retains the user's preference for the direct and magnified display.
             Aiming = apiAiming;
             bool aimPressed = apiAiming || mouseAim;
+            AimPressed = aimPressed;
             bool airThirdPerson = IsAirVehicle && View == ViewMode.ThirdPerson;
             bool breathAllowed = airThirdPerson || aimPressed;
             HoldingBreath = apiBreath && breathAllowed;

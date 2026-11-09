@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <AssemblyName>ER2_FovUnlock</AssemblyName>
+    <AssemblyName>ER2_FOVUnlock</AssemblyName>
     <RootNamespace>ER2FovUnlock</RootNamespace>
     <Version>1.0.0</Version>
     <LangVersion>latest</LangVersion>
@@ -73,7 +73,7 @@
   <!-- Pass -p:InstallToGame=true to copy the built DLL into BepInEx/plugins. -->
   <Target Name="CopyToPlugins" AfterTargets="Build" Condition="'$(InstallToGame)' == 'true'">
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GameDir)\BepInEx\plugins" />
-    <Message Text="Installed to $(GameDir)\BepInEx\plugins\ER2_FovUnlock.dll" Importance="high" />
+    <Message Text="Installed to $(GameDir)\BepInEx\plugins\ER2_FOVUnlock.dll" Importance="high" />
   </Target>
 
 </Project>

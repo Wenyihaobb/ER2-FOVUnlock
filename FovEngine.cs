@@ -116,6 +116,15 @@ namespace ER2FovUnlock
             float threshold = baseSetting > 1f
                 ? baseSetting * Mathf.Clamp(cfg.VanillaViewRatio.Value, 0.2f, 0.8f)
                 : 30f;
+            // Ground-vehicle gunner sights must use the game's native optic.
+            // The aiming API often stays false inside a vehicle, so AimPressed also
+            // covers the raw right mouse button. Without this, our base FOV / aim
+            // ratio would flatten the scope zoom ("not magnified enough").
+            bool vehicleSightYield = firstPerson
+                && GameState.IsInVehicle
+                && !GameState.IsAirVehicle
+                && GameState.AimPressed;
+
             string excluded = cfg.ExcludedCameraNames.Value;
             int applied = 0, yielded = 0;
             float shown = 0f;
@@ -166,7 +175,7 @@ namespace ER2FovUnlock
                     gameFov = current;
                 shownGameFov = gameFov;
 
-                if (gameFov < threshold)
+                if (vehicleSightYield || gameFov < threshold)
                 {
                     // Game enters scope / vehicle view mode: Return the camera to the game and, if necessary, restore it to its original desired FOV.
                     if (Mathf.Abs(current - gameFov) > 0.05f)
@@ -192,6 +201,7 @@ namespace ER2FovUnlock
             string zoom = GameState.HoldingBreath ? "HoldBreath" : GameState.Aiming ? "Aim" : "Normal";
             Status = yielded > 0
                 ? $"Special optics: yielded {yielded} camera(s), native {shownGameFov:0.#} deg"
+                  + (vehicleSightYield ? " (ground vehicle sight)" : "")
                 : applied > 0 ? $"{view} / {zoom} / {shown:0.#} deg" : "Waiting for cameras";
 
             if (cfg.DebugWarnings.Value && Environment.TickCount64 >= _nextDebugMs)

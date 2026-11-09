@@ -1,6 +1,6 @@
 # ER2 FOV Unlock
 
-An unofficial BepInEx 6 IL2CPP mod for **Easy Red 2** that gives you independent first- and
+An FOV mod for **Easy Red 2** that gives you independent first- and
 third-person field of view, configurable aim / hold-breath zoom, and smooth zoom transitions —
 while leaving the game's own scopes and vehicle optics completely untouched.
 
@@ -16,7 +16,7 @@ returns to its native behaviour.
 - **Configurable zoom** — aim zoom (0.70–1.00) and hold-breath zoom (0.45–0.70),
   both shown to two decimals and applied on top of the selected FOV.
 - **Smooth transitions** — zoom changes are interpolated instead of snapping. An optional
-  *Breath-holding Animation Improvement* for on-foot infantry uses a slower exponential
+  *Breath-holding Animation Improvement* for infantry combat uses a slower exponential
   ease-in: barely any zoom at first, then a quick snap to full magnification.
 - **Vanilla optics passthrough** — when the game enters a weapon scope, fixed artillery sight,
   tank or ground-vehicle sight, the plugin detects the low native camera FOV and fully yields
@@ -61,7 +61,7 @@ Launch the game once and quit. On that first run BepInEx generates `BepInEx\inte
 
 ### 2. Install the mod
 
-Copy `ER2_FovUnlock.dll` into:
+Copy `ER2_FOVUnlock.dll` into:
 
 ```
 <game root>\BepInEx\plugins\
@@ -72,7 +72,7 @@ Copy `ER2_FovUnlock.dll` into:
 Start the game, join a match and press **F8**. The settings menu should open. On first launch
 BepInEx also creates `BepInEx\config\ER2_FOVUnlock.cfg` with English comments.
 
-To uninstall, remove `ER2_FovUnlock.dll` from `BepInEx\plugins\`. No game files are modified.
+To uninstall, remove `ER2_FOVUnlock.dll` from `BepInEx\plugins\`. No game files are modified.
 
 ---
 
@@ -167,7 +167,7 @@ derived from the game, so they must not be redistributed.
 
    On Windows you can also run `build.bat`.
 
-The output is `bin\Release\net6.0\ER2_FovUnlock.dll`. Passing `-p:InstallToGame=true` also
+The output is `bin\Release\net6.0\ER2_FOVUnlock.dll`. Passing `-p:InstallToGame=true` also
 copies it into `<game root>\BepInEx\plugins\`. You can override paths on the command line with
 `-p:GameDir="..."` and `-p:InteropDir="..."`.
 

@@ -6,6 +6,6 @@ if not exist "%SDK%" set "SDK=dotnet"
 if errorlevel 1 (
   echo Build FAILED. See errors above.
 ) else (
-  echo Build OK. ER2_FovUnlock.dll copied to BepInEx\plugins.
+  echo Build OK. ER2_FOVUnlock.dll copied to BepInEx\plugins.
 )
 pause
