@@ -18,17 +18,12 @@ returns to its native behaviour.
 - **Smooth transitions** — zoom changes are interpolated instead of snapping. An optional
   *Breath-holding Animation Improvement* for infantry combat uses a slower exponential
   ease-in: barely any zoom at first, then a quick snap to full magnification.
-- **Vanilla optics passthrough** — when the game enters a weapon scope, fixed artillery sight,
+- **Vanilla optics passthrough** — when the game enters a weapon scope, fixed weapon sight,
   tank or ground-vehicle sight, the plugin detects the low native camera FOV and fully yields
   control back to the game. No more seeing your own gun barrel and hands inside a scope.
 - **Safe input blocking** — opening the menu releases the cursor and uses the game's
   own inventory gate to block firing, movement and looking. `Time.timeScale` is never frozen
   and the game is never paused, so the match keeps running.
-- **Only active during a match** — the main menu and loading screens keep their native camera.
-- **Four languages** — English, Simplified Chinese, Traditional Chinese and Japanese, with an
-  *Auto* option that follows the game language. Runtime log messages are always English and
-  silent by default (warnings and errors only).
-- **Rebindable hotkeys** — every key can be reassigned or cleared from the in-game menu.
 
 ---
 
@@ -88,6 +83,7 @@ To uninstall, remove `ER2_FOVUnlock.dll` from `BepInEx\plugins\`. No game files 
 | | Aim zoom slider (0.70–1.00) |
 | | Hold-breath zoom slider (0.45–0.70) |
 | | *Breath-holding Animation Improvement* toggle |
+| | *Flight Zoom* toggle |
 | | Four hotkey rows, each with **Bind** / **Clear** buttons |
 | Bottom | **Close** button |
 
@@ -136,6 +132,7 @@ Some useful advanced entries:
 | `HoldBreathSmoothSpeed` | 0.7 | Transition speed for the on-foot breath animation |
 | `HoldBreathCurve` | 4 | Exponential ease-in strength; higher means more "slow then sudden" |
 | `EnhancedBreathOnFoot` | true | Toggles the Breath-holding Animation Improvement |
+| `FlightZoom` | true | Hold-breath zoom in third-person aircraft; off means the breath key does nothing there |
 | `VanillaViewRatio` | 0.45 | Threshold for detecting scopes / vehicle optics |
 | `Language` | Auto | Menu language |
 | `DebugWarnings` | false | Emits diagnostic lines at warning level |
