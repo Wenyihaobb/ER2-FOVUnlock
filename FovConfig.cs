@@ -37,6 +37,7 @@ namespace ER2FovUnlock
         internal readonly ConfigEntry<float> HoldBreathSmoothSpeed;
         internal readonly ConfigEntry<float> HoldBreathCurve;
         internal readonly ConfigEntry<bool> EnhancedBreathOnFoot;
+        internal readonly ConfigEntry<bool> FlightZoom;
         internal readonly ConfigEntry<ViewModeSource> ViewModeOverride;
         internal readonly ConfigEntry<FovReference> Reference;
         internal readonly ConfigEntry<CameraTarget> Target;
@@ -122,6 +123,12 @@ namespace ER2FovUnlock
                 "Enable Breath-holding Animation Improvement (slower, exponential ease-in) for on-foot infantry only. " +
                 "When off, infantry uses the same basic breath zoom as vehicles and mounted weapons. " +
                 "Can also be toggled directly in the in-game menu.");
+
+            FlightZoom = config.Bind(
+                "2.Aim", "FlightZoom", true,
+                "Enable hold-breath zoom in third-person air vehicles without aiming first. " +
+                "When disabled, the breath key does nothing in a third-person aircraft. " +
+                "First-person aircraft are unaffected (aiming is still required).");
 
             ViewModeOverride = config.Bind(
                 "3.Advanced", "ViewModeOverride", ViewModeSource.Auto,

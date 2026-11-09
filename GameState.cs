@@ -113,7 +113,7 @@ namespace ER2FovUnlock
 
             ResolveVehicle();
             View = ResolveView(cfg);
-            ResolveAim();
+            ResolveAim(cfg);
 
             string viewText = View == ViewMode.FirstPerson ? "FP" : "TP";
             string zoomText = HoldingBreath ? "HoldBreath" : Aiming ? "Aim" : "Normal";
@@ -218,7 +218,7 @@ namespace ER2FovUnlock
             }
         }
 
-        private static void ResolveAim()
+        private static void ResolveAim(FovConfig cfg)
         {
             bool apiAiming = false, apiBreath = false;
             bool aimingOk = false, breathOk = false;
@@ -246,7 +246,10 @@ namespace ER2FovUnlock
             bool aimPressed = apiAiming || mouseAim;
             AimPressed = aimPressed;
             bool airThirdPerson = IsAirVehicle && View == ViewMode.ThirdPerson;
-            bool breathAllowed = airThirdPerson || aimPressed;
+            bool flightZoom = cfg.FlightZoom.Value;
+            // In third-person aircraft the breath key normally zooms without aiming.
+            // With FlightZoom off it must do nothing at all (not fall back to "aim first").
+            bool breathAllowed = airThirdPerson ? flightZoom : aimPressed;
             HoldingBreath = apiBreath && breathAllowed;
 
             if (aimingOk && breathOk)
@@ -266,7 +269,7 @@ namespace ER2FovUnlock
                         canHold = soldier.CanHoldBreath();
                 }
                 catch (Exception e) { WarnOnce("Soldier.CanHoldBreath", e); }
-                HoldingBreath = shift && canHold && (airThirdPerson || mouseAim);
+                HoldingBreath = shift && canHold && (airThirdPerson ? flightZoom : mouseAim);
             }
         }
 

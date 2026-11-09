@@ -22,6 +22,7 @@ namespace ER2FovUnlock
         internal static string AimZoom = "Aim Zoom";
         internal static string BreathZoom = "Hold Breath Zoom";
         internal static string EnhancedBreath = "Breath-holding Animation Improvement";
+        internal static string FlightZoom = "Flight Zoom";
         internal static string LanguageLabel = "Language";
         internal static string KeyMenu = "Menu Key";
         internal static string KeyToggle = "Toggle Key";
@@ -133,6 +134,7 @@ namespace ER2FovUnlock
                 AimZoom = "瞄准缩放";
                 BreathZoom = "屏息缩放";
                 EnhancedBreath = "屏息动画改进";
+                FlightZoom = "第三人称空中载具镜头缩放";
                 LanguageLabel = "语言";
                 KeyMenu = "菜单热键";
                 KeyToggle = "功能热键";
@@ -161,6 +163,7 @@ namespace ER2FovUnlock
                 AimZoom = "瞄準縮放";
                 BreathZoom = "屏息縮放";
                 EnhancedBreath = "屏息動畫改進";
+                FlightZoom = "第三人稱空中載具鏡頭縮放";
                 LanguageLabel = "語言";
                 KeyMenu = "選單熱鍵";
                 KeyToggle = "功能熱鍵";
@@ -189,6 +192,7 @@ namespace ER2FovUnlock
                 AimZoom = "エイム倍率";
                 BreathZoom = "息止め倍率";
                 EnhancedBreath = "息を止めるアニメーション改善";
+                FlightZoom = "三人称飛行機のレンズ拡大";
                 LanguageLabel = "言語";
                 KeyMenu = "メニューキー";
                 KeyToggle = "切替キー";
@@ -215,6 +219,7 @@ namespace ER2FovUnlock
             AimZoom = "Aim Zoom";
             BreathZoom = "Hold Breath Zoom";
             EnhancedBreath = "Breath-holding Animation Improvement";
+            FlightZoom = "Flight Zoom";
             LanguageLabel = "Language";
             KeyMenu = "Menu Key";
             KeyToggle = "Toggle Key";

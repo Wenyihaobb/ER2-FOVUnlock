@@ -20,7 +20,7 @@ namespace ER2FovUnlock
         internal enum CaptureKind { None, MenuKey, ToggleKey, FovIncrease, FovDecrease }
 
         private const float W = 420f;
-        private const float H = 520f;
+        private const float H = 540f;
         private const float TitleH = 34f;
 
         private const float KeyLabelW = 76f;
@@ -176,15 +176,20 @@ namespace ER2FovUnlock
                 if (enhanced != cfg.EnhancedBreathOnFoot.Value)
                     cfg.EnhancedBreathOnFoot.Value = enhanced;
 
-                DrawKeyRow(cfg, x, 330f, s, L.KeyMenu, cfg.MenuKey.Value, CaptureKind.MenuKey, false);
-                DrawKeyRow(cfg, x, 360f, s, L.KeyToggle, cfg.ToggleKey.Value, CaptureKind.ToggleKey, true);
-                DrawKeyRow(cfg, x, 390f, s, L.KeyIncrease, cfg.FovIncreaseKey.Value, CaptureKind.FovIncrease, true);
-                DrawKeyRow(cfg, x, 420f, s, L.KeyDecrease, cfg.FovDecreaseKey.Value, CaptureKind.FovDecrease, true);
+                bool flightZoom = GUI.Toggle(R(x, 322f, cw, 24f, s),
+                    cfg.FlightZoom.Value, new GUIContent("  " + L.FlightZoom), _toggle);
+                if (flightZoom != cfg.FlightZoom.Value)
+                    cfg.FlightZoom.Value = flightZoom;
+
+                DrawKeyRow(cfg, x, 354f, s, L.KeyMenu, cfg.MenuKey.Value, CaptureKind.MenuKey, false);
+                DrawKeyRow(cfg, x, 384f, s, L.KeyToggle, cfg.ToggleKey.Value, CaptureKind.ToggleKey, true);
+                DrawKeyRow(cfg, x, 414f, s, L.KeyIncrease, cfg.FovIncreaseKey.Value, CaptureKind.FovIncrease, true);
+                DrawKeyRow(cfg, x, 444f, s, L.KeyDecrease, cfg.FovDecreaseKey.Value, CaptureKind.FovDecrease, true);
 
                 if (Capturing != CaptureKind.None)
-                    GUI.Label(R(x, 450f, cw, 20f, s), L.PressKey, _value);
+                    GUI.Label(R(x, 472f, cw, 20f, s), L.PressKey, _value);
 
-                if (GUI.Button(R(x, 478f, cw, 28f, s), L.Close, _button))
+                if (GUI.Button(R(x, 498f, cw, 28f, s), L.Close, _button))
                     Close();
 
                 // Draw the expanded list last so it overlays the controls underneath.
