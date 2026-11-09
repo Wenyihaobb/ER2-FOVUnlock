@@ -135,7 +135,7 @@ Some useful advanced entries:
 | `ZoomSmoothSpeed` | 2 | Linear zoom transition speed |
 | `HoldBreathSmoothSpeed` | 0.7 | Transition speed for the on-foot breath animation |
 | `HoldBreathCurve` | 4 | Exponential ease-in strength; higher means more "slow then sudden" |
-| `EnhancedBreathOnFoot` | true | Toggles the on-foot breath animation |
+| `EnhancedBreathOnFoot` | true | Toggles the Breath-holding Animation Improvement |
 | `VanillaViewRatio` | 0.45 | Threshold for detecting scopes / vehicle optics |
 | `Language` | Auto | Menu language |
 | `DebugWarnings` | false | Emits diagnostic lines at warning level |
