@@ -21,7 +21,7 @@ returns to its native behaviour.
 - **Vanilla optics passthrough** — when the game enters a weapon scope, fixed artillery sight,
   tank or ground-vehicle sight, the plugin detects the low native camera FOV and fully yields
   control back to the game. No more seeing your own gun barrel and hands inside a scope.
-- **Multiplayer-safe input blocking** — opening the menu releases the cursor and uses the game's
+- **Safe input blocking** — opening the menu releases the cursor and uses the game's
   own inventory gate to block firing, movement and looking. `Time.timeScale` is never frozen
   and the game is never paused, so the match keeps running.
 - **Only active during a match** — the main menu and loading screens keep their native camera.
