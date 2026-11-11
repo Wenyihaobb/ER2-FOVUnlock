@@ -17,6 +17,12 @@ namespace ER2FovUnlock
         private static readonly Dictionary<int, float> _nativeFov = new Dictionary<int, float>();
         private static readonly Dictionary<int, float> _lastWritten = new Dictionary<int, float>();
         private static readonly Dictionary<int, float> _gameFov = new Dictionary<int, float>();
+        private static readonly Dictionary<int, string> _cameraNames = new Dictionary<int, string>();
+        private static string[] _excludedPatterns = new string[0];
+        private static string _excludedSource;
+        private static float _cachedSettingsFov;
+        private static long _nextSettingsReadMs;
+        private static int _mainCameraId = -1;
         private static float _lastApplied = -1f;
         private static float _smoothedRatio = 1f;
         private static float _lastSmoothTime = -1f;
@@ -35,6 +41,17 @@ namespace ER2FovUnlock
         internal static float CurrentTarget { get; private set; } = -1f;
         internal static float BaseTarget { get; private set; } = -1f;
         internal static bool IsActive => _wasActive;
+
+        // Exposed for the opt-in verbose diagnostics (FovDebug). Value types only,
+        // so assigning them every frame costs nothing.
+        internal static bool VehicleSightYield { get; private set; }
+        internal static bool ScopeProtection { get; private set; }
+        internal static int MainCameraId => _mainCameraId;
+        internal static int YieldedCount { get; private set; }
+        internal static int AppliedCount { get; private set; }
+        internal static float ObservedNativeFov { get; private set; }
+        internal static float OpticsThreshold { get; private set; }
+        internal static float AppliedRatio { get; private set; }
 
         internal static void OnControllerAwake()
         {
@@ -110,12 +127,21 @@ namespace ER2FovUnlock
                 return;
             }
 
-            // The threshold is calculated proportionally based on the game's own base FOV setting, to avoid misjudging normal breath-holding under different FOV settings.
-            float baseSetting = 0f;
-            GameFov.TryReadSettingsFov(out baseSetting);
+            // The game's saved FOV setting rarely changes, so read it once per second
+            // instead of twice per frame (Tick runs in Update and LateUpdate).
+            long nowMs = Environment.TickCount64;
+            if (nowMs >= _nextSettingsReadMs)
+            {
+                _nextSettingsReadMs = nowMs + 1000;
+                float read;
+                _cachedSettingsFov = GameFov.TryReadSettingsFov(out read) ? read : 0f;
+            }
+            float baseSetting = _cachedSettingsFov;
             float threshold = baseSetting > 1f
                 ? baseSetting * Mathf.Clamp(cfg.VanillaViewRatio.Value, 0.2f, 0.8f)
                 : 30f;
+            OpticsThreshold = threshold;
+            AppliedRatio = appliedRatio;
             // Ground-vehicle gunner sights must use the game's native optic.
             // The aiming API often stays false inside a vehicle, so AimPressed also
             // covers the raw right mouse button. Without this, our base FOV / aim
@@ -124,6 +150,21 @@ namespace ER2FovUnlock
                 && GameState.IsInVehicle
                 && !GameState.IsAirVehicle
                 && GameState.AimPressed;
+            bool scopeActive = GameState.UsingScope;
+            // Camera.main can be unavailable during a scene change. In that case we
+            // cannot tell the main camera apart, so fall back to the FOV-threshold
+            // optics yield rather than risk overwriting the scope camera.
+            bool protectMain = scopeActive && _mainCameraId >= 0;
+            VehicleSightYield = vehicleSightYield;
+            ScopeProtection = scopeActive;
+
+            // A weapon scope renders through its own camera, which is excluded below
+            // so the scope picture keeps the vanilla FOV. The MAIN camera must stay
+            // under plugin control: aim / breath ratios and the breath animation have
+            // to keep working outside the scope. Suppress the FOV-threshold yield on
+            // it while scoping, otherwise the game's low native FOV makes the plugin
+            // intermittently hand the main camera back (the "scope grows / outside
+            // FOV shrinks" glitch). Vehicle sights still yield globally.
 
             string excluded = cfg.ExcludedCameraNames.Value;
             int applied = 0, yielded = 0;
@@ -164,6 +205,18 @@ namespace ER2FovUnlock
                     continue;
                 }
 
+                // While a weapon scope is active the scope picture is rendered by its
+                // own camera. Leave every non-main camera completely untouched - do not
+                // write and do not restore its FOV - so the vanilla magnification stays.
+                // Only the main camera (outside the scope picture) stays under plugin
+                // control, keeping the aim / breath sliders and breath animation alive.
+                if (protectMain && id != _mainCameraId)
+                {
+                    _lastWritten[id] = -1f;
+                    yielded++;
+                    continue;
+                }
+
                 float lastWritten;
                 _lastWritten.TryGetValue(id, out lastWritten);
                 bool looksLikeOurs = lastWritten > 0f && Mathf.Abs(current - lastWritten) < 0.5f;
@@ -175,9 +228,11 @@ namespace ER2FovUnlock
                     gameFov = current;
                 shownGameFov = gameFov;
 
-                if (vehicleSightYield || gameFov < threshold)
+                bool fovYield = !protectMain && gameFov < threshold;
+                if (vehicleSightYield || fovYield)
                 {
-                    // Game enters scope / vehicle view mode: Return the camera to the game and, if necessary, restore it to its original desired FOV.
+                    // Dedicated optics / vehicle view: return the camera to the game and,
+                    // if necessary, restore it to its original desired FOV.
                     if (Mathf.Abs(current - gameFov) > 0.05f)
                         cam.fieldOfView = gameFov;
                     _lastWritten[id] = -1f;
@@ -197,12 +252,26 @@ namespace ER2FovUnlock
                 applied++;
             }
 
-            string view = GameState.View == ViewMode.FirstPerson ? "FP" : "TP";
-            string zoom = GameState.HoldingBreath ? "HoldBreath" : GameState.Aiming ? "Aim" : "Normal";
-            Status = yielded > 0
-                ? $"Special optics: yielded {yielded} camera(s), native {shownGameFov:0.#} deg"
-                  + (vehicleSightYield ? " (ground vehicle sight)" : "")
-                : applied > 0 ? $"{view} / {zoom} / {shown:0.#} deg" : "Waiting for cameras";
+            AppliedCount = applied;
+            YieldedCount = yielded;
+            ObservedNativeFov = shownGameFov;
+
+            // Building this interpolated string twice per frame is needless when no
+            // diagnostics are enabled; FovDebug assembles its own detailed view.
+            if (cfg.DebugWarnings.Value || cfg.VerboseDebug.Value)
+            {
+                string view = GameState.View == ViewMode.FirstPerson ? "FP" : "TP";
+                string zoom = GameState.HoldingBreath ? "HoldBreath" : GameState.Aiming ? "Aim" : "Normal";
+                Status = yielded > 0
+                    ? $"Special optics: yielded {yielded} camera(s), native {shownGameFov:0.#} deg"
+                      + (scopeActive ? " (weapon scope; main kept)"
+                          : vehicleSightYield ? " (ground vehicle sight)" : "")
+                    : applied > 0 ? $"{view} / {zoom} / {shown:0.#} deg" : "Waiting for cameras";
+            }
+            else
+            {
+                Status = yielded > 0 ? "Yielded" : applied > 0 ? "Active" : "Waiting for cameras";
+            }
 
             if (cfg.DebugWarnings.Value && Environment.TickCount64 >= _nextDebugMs)
             {
@@ -345,6 +414,7 @@ namespace ER2FovUnlock
             _nativeFov.Clear();
             _lastWritten.Clear();
             _gameFov.Clear();
+            _cameraNames.Clear();
         }
 
         private static List<Camera> GetCameras(FovConfig cfg)
@@ -356,7 +426,13 @@ namespace ER2FovUnlock
                 {
                     var main = Camera.main;
                     if (main != null)
+                    {
                         _cameras.Add(main);
+                        int mainId = main.GetInstanceID();
+                        _mainCameraId = mainId;
+                        if (!_cameraNames.ContainsKey(mainId))
+                            _cameraNames[mainId] = CameraName(main);
+                    }
                 }
                 catch
                 {
@@ -371,9 +447,23 @@ namespace ER2FovUnlock
 
             _nextRefreshMs = now + 1500;
             _cameras.Clear();
+            _cameraNames.Clear();
+            try
+            {
+                var mainCam = Camera.main;
+                _mainCameraId = mainCam != null ? mainCam.GetInstanceID() : -1;
+            }
+            catch
+            {
+                _mainCameraId = -1;
+            }
+
+            // Only build the camera-name diagnostic string when diagnostics are on.
+            bool wantCameraList = !_cameraListLogged &&
+                (cfg.DebugWarnings.Value || cfg.VerboseDebug.Value);
+            List<string> names = wantCameraList ? new List<string>() : null;
 
             var all = Camera.allCameras;
-            var names = new List<string>();
             for (int i = 0; i < all.Length; i++)
             {
                 var cam = all[i];
@@ -381,7 +471,13 @@ namespace ER2FovUnlock
                     continue;
 
                 string name = CameraName(cam);
-                names.Add(name + " (" + cam.fieldOfView.ToString("0.#") + "°)");
+                int id;
+                try { id = cam.GetInstanceID(); }
+                catch { continue; }
+                _cameraNames[id] = name;
+
+                if (names != null)
+                    names.Add(name + " (" + cam.fieldOfView.ToString("0.#") + "°)");
 
                 if (cfg.Target.Value == CameraTarget.ByName && !MatchesAny(name, cfg.CameraNames.Value))
                     continue;
@@ -389,7 +485,7 @@ namespace ER2FovUnlock
                 _cameras.Add(cam);
             }
 
-            if (!_cameraListLogged && cfg.DebugWarnings.Value)
+            if (names != null)
             {
                 _cameraListLogged = true;
                 FovUnlockPlugin.Logger.LogWarning("[FOV][Debug] Scene cameras: " + string.Join(", ", names));
@@ -402,8 +498,16 @@ namespace ER2FovUnlock
         {
             try
             {
+                // cam.name crosses the IL2CPP boundary and allocates a string every call.
+                // Cache it per camera instance; the cache is rebuilt on camera-list refresh.
+                int id = cam.GetInstanceID();
+                string cached;
+                if (_cameraNames.TryGetValue(id, out cached))
+                    return cached;
                 var n = cam.name;
-                return n == null ? string.Empty : n.ToString();
+                string name = n == null ? string.Empty : n.ToString();
+                _cameraNames[id] = name;
+                return name;
             }
             catch
             {
@@ -416,13 +520,64 @@ namespace ER2FovUnlock
         {
             if (string.IsNullOrEmpty(name) || string.IsNullOrWhiteSpace(patterns))
                 return false;
-            foreach (var raw in patterns.Split(','))
+            // Parse the comma-separated list only when the cfg value actually changes,
+            // instead of allocating an array + trimmed strings for every camera each frame.
+            if (!string.Equals(patterns, _excludedSource, StringComparison.Ordinal))
             {
-                var pattern = raw.Trim();
-                if (pattern.Length != 0 && name.IndexOf(pattern, StringComparison.OrdinalIgnoreCase) >= 0)
-                    return true;
+                _excludedSource = patterns;
+                _excludedPatterns = ParsePatterns(patterns);
             }
+            for (int i = 0; i < _excludedPatterns.Length; i++)
+                if (name.IndexOf(_excludedPatterns[i], StringComparison.OrdinalIgnoreCase) >= 0)
+                    return true;
             return false;
+        }
+
+        private static string[] ParsePatterns(string patterns)
+        {
+            var raw = patterns.Split(',');
+            var list = new List<string>(raw.Length);
+            for (int i = 0; i < raw.Length; i++)
+            {
+                string p = raw[i].Trim();
+                if (p.Length != 0)
+                    list.Add(p);
+            }
+            return list.ToArray();
+        }
+
+        /// <summary>Per-camera FOV breakdown for the opt-in verbose diagnostics.</summary>
+        internal static string CameraDump()
+        {
+            var sb = new System.Text.StringBuilder(256);
+            for (int i = 0; i < _cameras.Count; i++)
+            {
+                var cam = _cameras[i];
+                if (cam == null)
+                    continue;
+                try
+                {
+                    int id = cam.GetInstanceID();
+                    float game, written;
+                    _gameFov.TryGetValue(id, out game);
+                    _lastWritten.TryGetValue(id, out written);
+                    string name;
+                    if (!_cameraNames.TryGetValue(id, out name))
+                        name = "?";
+                    if (sb.Length > 0)
+                        sb.Append(" | ");
+                    sb.Append(name).Append("(id=").Append(id)
+                      .Append(" fov=").Append(cam.fieldOfView.ToString("0.#"))
+                      .Append(" game=").Append(game.ToString("0.#"))
+                      .Append(" written=").Append(written.ToString("0.#"))
+                      .Append(")");
+                }
+                catch
+                {
+                    // Camera destroyed mid-frame.
+                }
+            }
+            return sb.ToString();
         }
 
         private static bool MatchesAny(string name, string patterns)

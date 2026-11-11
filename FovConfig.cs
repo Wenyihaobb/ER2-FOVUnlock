@@ -54,6 +54,7 @@ namespace ER2FovUnlock
         internal readonly ConfigEntry<bool> BlockInputViaPause;
         internal readonly ConfigEntry<bool> UseInventoryGate;
         internal readonly ConfigEntry<bool> DebugWarnings;
+        internal readonly ConfigEntry<bool> VerboseDebug;
 
         internal FovConfig(ConfigFile config)
         {
@@ -208,6 +209,13 @@ namespace ER2FovUnlock
             DebugWarnings = config.Bind(
                 "5.Diagnostics", "DebugWarnings", false,
                 "Silent by default. When enabled, prints match / view mode / optics-yield diagnostics at Warning level.");
+
+            VerboseDebug = config.Bind(
+                "5.Diagnostics", "VerboseDebug", false,
+                "Full diagnostic log, cfg-only (never shown in the in-game menu). OFF by default. " +
+                "While enabled and in a match, writes a complete state snapshot to BepInEx/LogOutput.log " +
+                "every 2 seconds plus an immediate line on any key state change. " +
+                "Use it to diagnose FOV / optics / vehicle issues; leave it off for normal play.");
         }
     }
 }

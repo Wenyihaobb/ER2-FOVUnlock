@@ -48,6 +48,8 @@ namespace ER2FovUnlock
             HandleHotkeys(cfg);
             ApplyMenuState(cfg);
             FovEngine.Tick(cfg);
+            // Opt-in verbose diagnostics; internally throttled and a no-op when disabled.
+            FovDebug.Tick(cfg);
         }
 
         private void LateUpdate()

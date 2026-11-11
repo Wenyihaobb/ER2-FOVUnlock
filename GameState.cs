@@ -35,6 +35,16 @@ namespace ER2FovUnlock
         /// </summary>
         internal static bool AimPressed { get; private set; }
 
+        /// <summary>
+        /// True while the held weapon is actually rendering through its scope optic.
+        /// Read from GenericGun.IsUsingScope - a real game state, unlike the FOV-based
+        /// optics guess. The dedicated scope camera keeps the vanilla FOV (excluded by
+        /// name); the MAIN camera stays under plugin control so aim / breath ratios and
+        /// the breath animation keep working outside the scope picture. Its FOV-threshold
+        /// yield is suppressed while scoping to stop the intermittent hand-back glitch.
+        /// </summary>
+        internal static bool UsingScope { get; private set; }
+
         /// <summary>A summary of the status displayed in the menu.</summary>
         internal static string Summary { get; private set; } = "Status detection in progress...";
 
@@ -114,10 +124,15 @@ namespace ER2FovUnlock
             ResolveVehicle();
             View = ResolveView(cfg);
             ResolveAim(cfg);
+            ResolveScope();
 
             string viewText = View == ViewMode.FirstPerson ? "FP" : "TP";
             string zoomText = HoldingBreath ? "HoldBreath" : Aiming ? "Aim" : "Normal";
-            Summary = InMatch ? $"{viewText} / {zoomText}" : "Main menu / loading";
+
+            // Summary is only consumed by diagnostics; avoid an interpolated string
+            // allocation every 33 ms during normal play.
+            if (cfg.DebugWarnings.Value || cfg.VerboseDebug.Value)
+                Summary = InMatch ? $"{viewText} / {zoomText}" : "Main menu / loading";
 
             if (cfg.DebugWarnings.Value)
             {
@@ -270,6 +285,31 @@ namespace ER2FovUnlock
                 }
                 catch (Exception e) { WarnOnce("Soldier.CanHoldBreath", e); }
                 HoldingBreath = shift && canHold && (airThirdPerson ? flightZoom : mouseAim);
+            }
+        }
+
+        /// <summary>
+        /// Reads the game's own scope state. Falls back silently to the FOV-threshold
+        /// optics detection if the API is unavailable, so behaviour never gets worse.
+        /// </summary>
+        private static void ResolveScope()
+        {
+            UsingScope = false;
+            try
+            {
+                var soldier = Soldier.CurrentControlledSoldierOrNull();
+                if (soldier == null)
+                    return;
+                var gun = soldier.GetHeldGun(0);
+                if (gun != null)
+                    // The AimPressed guard keeps this safe even if IsUsingScope turns out
+                    // to mean "this weapon has a scope fitted" rather than "scoping now":
+                    // without it the plugin would yield permanently.
+                    UsingScope = gun.IsUsingScope && AimPressed;
+            }
+            catch (Exception e)
+            {
+                WarnOnce("GenericGun.IsUsingScope", e);
             }
         }
 
